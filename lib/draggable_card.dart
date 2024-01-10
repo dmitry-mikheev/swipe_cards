@@ -3,15 +3,21 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-enum SlideDirection { left, right, up }
+enum SlideDirection { left, right, up, down }
 
-enum SlideRegion { inNopeRegion, inLikeRegion, inSuperLikeRegion }
+enum SlideRegion {
+  inNopeRegion,
+  inLikeRegion,
+  inSuperLikeRegion,
+  inBottomRegion
+}
 
 class DraggableCard extends StatefulWidget {
   final Widget? card;
   final Widget? likeTag;
   final Widget? nopeTag;
   final Widget? superLikeTag;
+  final Widget? bottomTag;
   final bool isDraggable;
   final SlideDirection? slideTo;
   final Function(double distance)? onSlideUpdate;
@@ -20,6 +26,7 @@ class DraggableCard extends StatefulWidget {
   final Function(SlideRegion? slideRegion)? onSlideRegionUpdate;
   final Function(SlideDirection? direction)? onSlideOutComplete;
   final bool upSwipeAllowed;
+  final bool downSwipeAllowed;
   final bool leftSwipeAllowed;
   final bool rightSwipeAllowed;
   final EdgeInsets padding;
@@ -27,6 +34,7 @@ class DraggableCard extends StatefulWidget {
   final double leftSwipeThreshold;
   final double rightSwipeThreshold;
   final double topSwipeThreshold;
+  final double downSwipeThreshold;
   final double nopeTagAngle;
   final double likeTagAngle;
 
@@ -35,6 +43,7 @@ class DraggableCard extends StatefulWidget {
     this.likeTag,
     this.nopeTag,
     this.superLikeTag,
+    this.bottomTag,
     this.isDraggable = true,
     this.onSlideUpdate,
     this.onSwipeChange,
@@ -43,6 +52,7 @@ class DraggableCard extends StatefulWidget {
     this.slideTo,
     this.onSlideRegionUpdate,
     this.upSwipeAllowed = false,
+    this.downSwipeAllowed = false,
     this.leftSwipeAllowed = true,
     this.rightSwipeAllowed = true,
     this.isBackCard = false,
@@ -50,6 +60,7 @@ class DraggableCard extends StatefulWidget {
     this.leftSwipeThreshold = -0.45,
     this.rightSwipeThreshold = 0.45,
     this.topSwipeThreshold = -0.4,
+    this.downSwipeThreshold = 0.4,
     this.nopeTagAngle = -12,
     this.likeTagAngle = 12,
   });
@@ -58,7 +69,8 @@ class DraggableCard extends StatefulWidget {
   _DraggableCardState createState() => _DraggableCardState();
 }
 
-class _DraggableCardState extends State<DraggableCard> with TickerProviderStateMixin {
+class _DraggableCardState extends State<DraggableCard>
+    with TickerProviderStateMixin {
   GlobalKey profileCardKey = GlobalKey(debugLabel: 'profile_card_key');
   Offset? cardOffset = const Offset(0.0, 0.0);
   Offset? dragStart;
@@ -159,6 +171,9 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
         case SlideDirection.up:
           _slideUp();
           break;
+        case SlideDirection.down:
+          _slideDown();
+          break;
       }
     }
   }
@@ -172,8 +187,11 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
 
   Offset _chooseRandomDragStart() {
     final cardContext = profileCardKey.currentContext!;
-    final cardTopLeft = (cardContext.findRenderObject() as RenderBox).localToGlobal(const Offset(0.0, 0.0));
-    final dragStartY = cardContext.size!.height * (Random().nextDouble() < 0.5 ? 0.25 : 0.75) + cardTopLeft.dy;
+    final cardTopLeft = (cardContext.findRenderObject() as RenderBox)
+        .localToGlobal(const Offset(0.0, 0.0));
+    final dragStartY =
+        cardContext.size!.height * (Random().nextDouble() < 0.5 ? 0.25 : 0.75) +
+            cardTopLeft.dy;
     return Offset(cardContext.size!.width / 2 + cardTopLeft.dx, dragStartY);
   }
 
@@ -181,7 +199,8 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
     await Future.delayed(Duration(milliseconds: 1)).then((_) {
       final screenWidth = context.size!.width;
       dragStart = _chooseRandomDragStart();
-      slideOutTween = Tween(begin: const Offset(0.0, 0.0), end: Offset(-2 * screenWidth, 0.0));
+      slideOutTween = Tween(
+          begin: const Offset(0.0, 0.0), end: Offset(-2 * screenWidth, 0.0));
       slideOutAnimation.forward(from: 0.0);
     });
   }
@@ -190,7 +209,8 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
     await Future.delayed(Duration(milliseconds: 1)).then((_) {
       final screenWidth = context.size!.width;
       dragStart = _chooseRandomDragStart();
-      slideOutTween = Tween(begin: const Offset(0.0, 0.0), end: Offset(2 * screenWidth, 0.0));
+      slideOutTween = Tween(
+          begin: const Offset(0.0, 0.0), end: Offset(2 * screenWidth, 0.0));
       slideOutAnimation.forward(from: 0.0);
     });
   }
@@ -199,7 +219,18 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
     await Future.delayed(Duration(milliseconds: 1)).then((_) {
       final screenHeight = context.size!.height;
       dragStart = _chooseRandomDragStart();
-      slideOutTween = Tween(begin: const Offset(0.0, 0.0), end: Offset(0.0, -2 * screenHeight));
+      slideOutTween = Tween(
+          begin: const Offset(0.0, 0.0), end: Offset(0.0, -2 * screenHeight));
+      slideOutAnimation.forward(from: 0.0);
+    });
+  }
+
+  void _slideDown() async {
+    await Future.delayed(Duration(milliseconds: 1)).then((_) {
+      final screenHeight = context.size!.height;
+      dragStart = _chooseRandomDragStart();
+      slideOutTween = Tween(
+          begin: const Offset(0.0, 0.0), end: Offset(0.0, 2 * screenHeight));
       slideOutAnimation.forward(from: 0.0);
     });
   }
@@ -214,15 +245,24 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
 
   void _onPanUpdate(DragUpdateDetails details) {
     /// Added customizable swipe thresholds. Old values used by default.
-    final isInLeftRegion = (cardOffset!.dx / context.size!.width) < widget.leftSwipeThreshold;
-    final isInRightRegion = (cardOffset!.dx / context.size!.width) >= widget.rightSwipeThreshold;
-    final isInTopRegion = (cardOffset!.dy / context.size!.height) < widget.topSwipeThreshold;
+    final isInLeftRegion =
+        (cardOffset!.dx / context.size!.width) < widget.leftSwipeThreshold;
+    final isInRightRegion =
+        (cardOffset!.dx / context.size!.width) >= widget.rightSwipeThreshold;
+    final isInTopRegion =
+        (cardOffset!.dy / context.size!.height) < widget.topSwipeThreshold;
+    final isInBotRegion =
+        (cardOffset!.dy / context.size!.height) >= widget.downSwipeThreshold;
 
     setState(() {
       if (isInLeftRegion || isInRightRegion) {
-        slideRegion = isInLeftRegion ? SlideRegion.inNopeRegion : SlideRegion.inLikeRegion;
+        slideRegion = isInLeftRegion
+            ? SlideRegion.inNopeRegion
+            : SlideRegion.inLikeRegion;
       } else if (isInTopRegion) {
         slideRegion = SlideRegion.inSuperLikeRegion;
+      } else if (isInBotRegion) {
+        slideRegion = SlideRegion.inBottomRegion;
       } else {
         slideRegion = null;
       }
@@ -248,14 +288,20 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
     final dragVector = cardOffset! / cardOffset!.distance;
 
     /// Threshold for resulting action is the same as threshold for showing Nope / Like action widgets
-    final isInLeftRegion = (cardOffset!.dx / context.size!.width) < widget.leftSwipeThreshold;
-    final isInRightRegion = (cardOffset!.dx / context.size!.width) >= widget.rightSwipeThreshold;
-    final isInTopRegion = (cardOffset!.dy / context.size!.height) < widget.topSwipeThreshold;
+    final isInLeftRegion =
+        (cardOffset!.dx / context.size!.width) < widget.leftSwipeThreshold;
+    final isInRightRegion =
+        (cardOffset!.dx / context.size!.width) >= widget.rightSwipeThreshold;
+    final isInTopRegion =
+        (cardOffset!.dy / context.size!.height) < widget.topSwipeThreshold;
+    final isInBotRegion =
+        (cardOffset!.dy / context.size!.height) >= widget.downSwipeThreshold;
 
     setState(() {
       if (isInLeftRegion) {
         if (widget.leftSwipeAllowed) {
-          slideOutTween = Tween(begin: cardOffset, end: dragVector * (2 * context.size!.width));
+          slideOutTween = Tween(
+              begin: cardOffset, end: dragVector * (2 * context.size!.width));
           slideOutAnimation.forward(from: 0.0);
 
           slideOutDirection = SlideDirection.left;
@@ -265,7 +311,8 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
         }
       } else if (isInRightRegion) {
         if (widget.rightSwipeAllowed) {
-          slideOutTween = Tween(begin: cardOffset, end: dragVector * (2 * context.size!.width));
+          slideOutTween = Tween(
+              begin: cardOffset, end: dragVector * (2 * context.size!.width));
           slideOutAnimation.forward(from: 0.0);
 
           slideOutDirection = SlideDirection.right;
@@ -275,10 +322,22 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
         }
       } else if (isInTopRegion) {
         if (widget.upSwipeAllowed) {
-          slideOutTween = Tween(begin: cardOffset, end: dragVector * (2 * context.size!.height));
+          slideOutTween = Tween(
+              begin: cardOffset, end: dragVector * (2 * context.size!.height));
           slideOutAnimation.forward(from: 0.0);
 
           slideOutDirection = SlideDirection.up;
+        } else {
+          slideBackStart = cardOffset;
+          slideBackAnimation.forward(from: 0.0);
+        }
+      } else if (isInBotRegion) {
+        if (widget.downSwipeAllowed) {
+          slideOutTween = Tween(
+              begin: cardOffset, end: dragVector * (2 * context.size!.height));
+          slideOutAnimation.forward(from: 0.0);
+
+          slideOutDirection = SlideDirection.down;
         } else {
           slideBackStart = cardOffset;
           slideBackAnimation.forward(from: 0.0);
@@ -292,9 +351,13 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
       if (null != widget.onSwipeFinish) {
         final region;
         if (isInLeftRegion || isInRightRegion) {
-          region = isInLeftRegion ? SlideRegion.inNopeRegion : SlideRegion.inLikeRegion;
+          region = isInLeftRegion
+              ? SlideRegion.inNopeRegion
+              : SlideRegion.inLikeRegion;
         } else if (isInTopRegion) {
           region = SlideRegion.inSuperLikeRegion;
+        } else if (isInBotRegion) {
+          region = SlideRegion.inBottomRegion;
         } else {
           region = null;
         }
@@ -310,8 +373,11 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
 
   double _rotation(Rect? dragBounds) {
     if (dragStart != null) {
-      final rotationCornerMultiplier = dragStart!.dy >= dragBounds!.top + (dragBounds.height / 2) ? -1 : 1;
-      return (pi / 8) * (cardOffset!.dx / dragBounds.width) * rotationCornerMultiplier;
+      final rotationCornerMultiplier =
+          dragStart!.dy >= dragBounds!.top + (dragBounds.height / 2) ? -1 : 1;
+      return (pi / 8) *
+          (cardOffset!.dx / dragBounds.width) *
+          rotationCornerMultiplier;
     } else {
       return 0.0;
     }
@@ -333,12 +399,15 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
 
     //Disables dragging card while slide out animation is in progress. Solves
     // issue that fast swipes cause the back card not loading
-    if (widget.isBackCard && anchorBounds != null && cardOffset!.dx < anchorBounds!.height) {
+    if (widget.isBackCard &&
+        anchorBounds != null &&
+        cardOffset!.dx < anchorBounds!.height) {
       cardOffset = Offset.zero;
     }
 
     return Transform(
-      transform: Matrix4.translationValues(cardOffset!.dx, cardOffset!.dy, 0.0)..rotateZ(_rotation(anchorBounds)),
+      transform: Matrix4.translationValues(cardOffset!.dx, cardOffset!.dy, 0.0)
+        ..rotateZ(_rotation(anchorBounds)),
       origin: _rotationOrigin(anchorBounds),
       child: Container(
         key: profileCardKey,
@@ -353,7 +422,8 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
               ? Stack(
                   children: [
                     widget.card!,
-                    if (widget.likeTag != null && slideRegion == SlideRegion.inLikeRegion)
+                    if (widget.likeTag != null &&
+                        slideRegion == SlideRegion.inLikeRegion)
                       Positioned(
                         top: 0,
                         left: 0,
@@ -362,7 +432,8 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
                           child: widget.likeTag,
                         ),
                       ),
-                    if (widget.nopeTag != null && slideRegion == SlideRegion.inNopeRegion)
+                    if (widget.nopeTag != null &&
+                        slideRegion == SlideRegion.inNopeRegion)
                       Positioned(
                         top: 0,
                         right: 0,
@@ -371,10 +442,17 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
                           child: widget.nopeTag,
                         ),
                       ),
-                    if (widget.superLikeTag != null && slideRegion == SlideRegion.inSuperLikeRegion)
+                    if (widget.superLikeTag != null &&
+                        slideRegion == SlideRegion.inSuperLikeRegion)
                       Align(
                         alignment: Alignment.bottomCenter,
                         child: widget.superLikeTag,
+                      ),
+                    if (widget.bottomTag != null &&
+                        slideRegion == SlideRegion.inBottomRegion)
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: widget.bottomTag,
                       ),
                   ],
                 )
@@ -388,7 +466,8 @@ class _DraggableCardState extends State<DraggableCard> with TickerProviderStateM
     await Future.delayed(Duration(milliseconds: 3));
     box = context.findRenderObject() as RenderBox?;
     topLeft = box!.size.topLeft(box!.localToGlobal(const Offset(0.0, 0.0)));
-    bottomRight = box!.size.bottomRight(box!.localToGlobal(const Offset(0.0, 0.0)));
+    bottomRight =
+        box!.size.bottomRight(box!.localToGlobal(const Offset(0.0, 0.0)));
     anchorBounds = new Rect.fromLTRB(
       topLeft.dx,
       topLeft.dy,
