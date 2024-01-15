@@ -4,6 +4,7 @@ A Flutter widget for Tinder like swipe cards. The card can be swiped right, left
 - Right swipe for like
 - Left swipe for nope
 - Up swipe for superlike
+- Down swipe for custom
 
 ## Install
 To install the package, add the following dependency to your `pubspec.yaml`
@@ -25,6 +26,7 @@ SwipeCards(
             onStackFinished: () {},
             itemChanged: (SwipeItem item, int index) {},
             upSwipeAllowed: <bool>,
+            downSwipeAllowed: <bool>,
             fillSpace: <bool>,
 );
 ```
@@ -47,6 +49,7 @@ SwipeCards(
 | `leftSwipeThreshold`|  Threshold for left swipe. The larger the number, the further the card needs to be dragged to activate the action. Must be less or equal to 0 to work correct. (Default: -0.45)    |
 | `rightSwipeThreshold`|  Threshold for right swipe. The larger the number, the further the card needs to be dragged to activate the action. Must be bigger or equal to 0 to work correct. (Default: 0.45)    |
 | `topSwipeThreshold`|  Threshold for top swipe. The larger the number, the further the card needs to be dragged to activate the action. (Default: -0.4)    |
+| `downSwipeThreshold`|  Threshold down top swipe. The larger the number, the further the card needs to be dragged to activate the action. (Default: 0.4)    |
 | `onSwipeChange`    |  Triggered when user dragging the card    |
 | `onSwipeFinish`    |  Triggered when user releases the card    |
 
@@ -67,6 +70,7 @@ MatchEngine _matchEngine = MatchEngine(swipeItems: List<SwipeItem>);
 | `_matchEngine.currentItem.like();`    | To trigger right swipe manually.    |
 | `_matchEngine.currentItem.nope();`     |  To trigger left swipe manually.                    |
 | `_matchEngine.currentItem.superLike();` |  To trigger up swipe manually.    |
+| `_matchEngine.currentItem.down();` |  To trigger down swipe manually.    |
 
 ### SwipeItem
 
@@ -86,6 +90,9 @@ SwipeItem(
             superlikeAction: () {
                 log("Superlike");
             },
+            downAction:  () {
+                log("DownSwipe");
+            },
             onSlideUpdate: (SlideRegion? region){
                 log("Region $region");
             }
@@ -100,6 +107,7 @@ SwipeItem(
 | `likeAction`     |  A function that is triggered when the card is liked.                    |
 | `nopeAction` |  A function that is triggered when the card is not liked / swiped left.    |
 | `superlikeAction` |  A function that is triggered when the card is superliked.    |
+| `downAction` |  A function that is triggered when the card is swiped down.    |
 | `onSlideUpdate` |  A function that is triggered when the card is being dragged and tells about the current region of the card.    |
 
 ### Example

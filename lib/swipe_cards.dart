@@ -17,6 +17,7 @@ class SwipeCards extends StatefulWidget {
   final Function(SwipeItem, int)? itemChanged;
   final bool fillSpace;
   final bool upSwipeAllowed;
+  final bool downSwipeAllowed;
   final bool leftSwipeAllowed;
   final bool rightSwipeAllowed;
   final double nopeTagAngle;
@@ -30,6 +31,9 @@ class SwipeCards extends StatefulWidget {
 
   /// Threshold for top swipe. The larger the number, the further the card needs to be dragged to activate the action.
   final double topSwipeThreshold;
+
+  /// Threshold for top swipe. The larger the number, the further the card needs to be dragged to activate the action.
+  final double downSwipeThreshold;
 
   /// Triggered when user dragging the card
   final Function(SwipeItem item, SlideRegion? slideRegion)? onSwipeChange;
@@ -48,11 +52,13 @@ class SwipeCards extends StatefulWidget {
     this.itemChanged,
     this.fillSpace = true,
     this.upSwipeAllowed = false,
+    this.downSwipeAllowed = false,
     this.leftSwipeAllowed = true,
     this.rightSwipeAllowed = true,
     this.leftSwipeThreshold = -0.45,
     this.rightSwipeThreshold = 0.45,
     this.topSwipeThreshold = -0.4,
+    this.downSwipeThreshold = 0.4,
     this.onSwipeChange,
     this.onSwipeFinish,
     this.nopeTagAngle = -12,
@@ -188,20 +194,24 @@ class _SwipeCardsState extends State<SwipeCards> {
       case SlideDirection.up:
         currentMatch?.superLike();
         break;
+      case SlideDirection.down:
+        currentMatch?.down();
+        break;
       case null:
         break;
     }
 
-    if (direction != null) {
-      if (widget.matchEngine._nextItemIndex! < widget.matchEngine._swipeItems!.length) {
-        widget.itemChanged?.call(widget.matchEngine.nextItem!, widget.matchEngine._nextItemIndex!);
-      }
-      widget.matchEngine.itemChanged?.call(widget.matchEngine.currentItem, widget.matchEngine._currentItemIndex);
+    if (widget.matchEngine._nextItemIndex! <
+        widget.matchEngine._swipeItems!.length) {
+      widget.itemChanged?.call(
+          widget.matchEngine.nextItem!, widget.matchEngine._nextItemIndex!);
+    }
+    widget.matchEngine.itemChanged?.call(
+        widget.matchEngine.currentItem, widget.matchEngine._currentItemIndex);
 
-      widget.matchEngine.cycleMatch();
-      if (widget.matchEngine.currentItem == null) {
-        widget.onStackFinished();
-      }
+    widget.matchEngine.cycleMatch();
+    if (widget.matchEngine.currentItem == null) {
+      widget.onStackFinished();
     }
   }
 
@@ -213,6 +223,8 @@ class _SwipeCardsState extends State<SwipeCards> {
         return SlideDirection.right;
       case Decision.superLike:
         return SlideDirection.up;
+      case Decision.down:
+        return SlideDirection.down;
       default:
         return null;
     }
@@ -228,6 +240,7 @@ class _SwipeCardsState extends State<SwipeCards> {
             isDraggable: false,
             card: _buildBackCard(),
             upSwipeAllowed: widget.upSwipeAllowed,
+            downSwipeAllowed: widget.downSwipeAllowed,
             leftSwipeAllowed: widget.leftSwipeAllowed,
             rightSwipeAllowed: widget.rightSwipeAllowed,
             isBackCard: true,
@@ -245,12 +258,14 @@ class _SwipeCardsState extends State<SwipeCards> {
             onSlideRegionUpdate: _onSlideRegion,
             onSlideOutComplete: _onSlideOutComplete,
             upSwipeAllowed: widget.upSwipeAllowed,
+            downSwipeAllowed: widget.downSwipeAllowed,
             leftSwipeAllowed: widget.leftSwipeAllowed,
             rightSwipeAllowed: widget.rightSwipeAllowed,
             isBackCard: false,
             leftSwipeThreshold: widget.leftSwipeThreshold,
             rightSwipeThreshold: widget.rightSwipeThreshold,
             topSwipeThreshold: widget.topSwipeThreshold,
+            downSwipeThreshold: widget.downSwipeThreshold,
             nopeTagAngle: widget.nopeTagAngle,
             likeTagAngle: widget.likeTagAngle,
           )
@@ -275,9 +290,13 @@ class MatchEngine extends ChangeNotifier {
     _nextItemIndex = 1;
   }
 
-  SwipeItem? get currentItem => _currentItemIndex! < _swipeItems!.length ? _swipeItems![_currentItemIndex!] : null;
+  SwipeItem? get currentItem => _currentItemIndex! < _swipeItems!.length
+      ? _swipeItems![_currentItemIndex!]
+      : null;
 
-  SwipeItem? get nextItem => _nextItemIndex! < _swipeItems!.length ? _swipeItems![_nextItemIndex!] : null;
+  SwipeItem? get nextItem => _nextItemIndex! < _swipeItems!.length
+      ? _swipeItems![_nextItemIndex!]
+      : null;
 
   void cycleMatch() {
     //if (currentItem!.decision != Decision.undecided) {
@@ -304,6 +323,7 @@ class SwipeItem extends ChangeNotifier {
   final Function? likeAction;
   final Function? superlikeAction;
   final Function? nopeAction;
+  final Function? downAction;
   final Future Function(SlideRegion? slideRegion)? onSlideUpdate;
   final Future Function(SlideRegion? slideRegion)? onSlideFinish;
   Decision decision = Decision.undecided;
@@ -313,6 +333,7 @@ class SwipeItem extends ChangeNotifier {
     this.likeAction,
     this.superlikeAction,
     this.nopeAction,
+    this.downAction,
     this.onSlideUpdate,
     this.onSlideFinish,
   });
@@ -354,6 +375,16 @@ class SwipeItem extends ChangeNotifier {
     }
   }
 
+  void down() {
+    if (decision == Decision.undecided) {
+      decision = Decision.down;
+      try {
+        downAction?.call();
+      } catch (e) {}
+      notifyListeners();
+    }
+  }
+
   void resetMatch() {
     if (decision != Decision.undecided) {
       decision = Decision.undecided;
@@ -362,4 +393,4 @@ class SwipeItem extends ChangeNotifier {
   }
 }
 
-enum Decision { undecided, nope, like, superLike }
+enum Decision { undecided, nope, like, superLike, down }
